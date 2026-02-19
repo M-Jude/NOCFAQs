@@ -1,0 +1,31 @@
+{
+  "name": "noc-faqs",
+  "version": "1.0.0",
+  "description": "NOC Knowledge Base System - A Q&A platform for Network Operations Center",
+  "author": "NOC Team",
+  "license": "MIT",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "build:frontend": "cd frontend && npm run build",
+    "seed": "cd backend && npm run seed",
+    "start": "npm run start:backend",
+    "dev": "npm run dev:backend"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "keywords": [
+    "noc",
+    "knowledge-base",
+    "faq",
+    "network-operations",
+    "react",
+    "nodejs",
+    "mongodb"
+  ]
+}

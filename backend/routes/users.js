@@ -1,51 +1,179 @@
+/**
+ * User Management Routes
+ * 
+ * Handles CRUD operations for user accounts.
+ * Most routes require admin privileges.
+ * 
+ * @module routes/users
+ * @prefix /api/users
+ */
+
 const express = require('express');
 const User = require('../models/User');
 const { auth, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get all users (Admin and HR only)
-router.get('/', auth, authorize('admin', 'hr'), async (req, res) => {
+// ============================================================================
+// PROTECTED ROUTES
+// ============================================================================
+
+// All routes require authentication
+router.use(auth);
+
+/**
+ * GET /api/users
+ * 
+ * Get all users in the system.
+ * Accessible by admin and HR roles only.
+ * 
+ * @query {number} [page=1] - Page number for pagination
+ * @query {number} [limit=50] - Items per page
+ * @returns {Array} List of users
+ * @access Protected (admin, hr)
+ */
+router.get('/', authorize('admin', 'hr'), async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
-    res.json(users);
+    const { page = 1, limit = 50 } = req.query;
+    
+    const users = await User.find()
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+    
+    const total = await User.countDocuments();
+    
+    res.json({
+      success: true,
+      users,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Get users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching users'
+    });
   }
 });
 
-// Get user by ID
-router.get('/:id', auth, async (req, res) => {
+/**
+ * GET /api/users/:id
+ * 
+ * Get a specific user by ID.
+ * Users can view their own profile, admins can view any.
+ * 
+ * @param {string} :id - User ID
+ * @returns {Object} User data
+ * @access Protected
+ */
+router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // Users can only view their own profile unless they're admin
+    if (req.user.role !== 'admin' && req.user._id.toString() !== req.params.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
     }
-    res.json(user);
+    
+    const user = await User.findById(req.params.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Get user error:', error);
+    
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user'
+    });
   }
 });
 
-// Update user (Admin only)
-router.put('/:id', auth, authorize('admin'), async (req, res) => {
+/**
+ * PUT /api/users/:id
+ * 
+ * Update a user's information.
+ * Only accessible by admin users.
+ * 
+ * @param {string} :id - User ID to update
+ * @body {string} [username] - New username
+ * @body {string} [email] - New email
+ * @body {string} [role] - New role
+ * @body {string} [fullName] - New full name
+ * @body {string} [department] - New department
+ * @returns {Object} Updated user data
+ * @access Protected (admin only)
+ */
+router.put('/:id', authorize('admin'), async (req, res) => {
   try {
     const { username, email, role, fullName, department } = req.body;
     
+    // Find the user
     const user = await User.findById(req.params.id);
+    
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
-
-    if (username) user.username = username;
-    if (email) user.email = email;
+    
+    // Check for duplicate email/username if changing
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already in use'
+        });
+      }
+      user.email = email;
+    }
+    
+    if (username && username !== user.username) {
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username already taken'
+        });
+      }
+      user.username = username;
+    }
+    
+    // Update other fields if provided
     if (role) user.role = role;
     if (fullName) user.fullName = fullName;
-    if (department) user.department = department;
-
+    if (department !== undefined) user.department = department;
+    
     await user.save();
-
+    
     res.json({
+      success: true,
       message: 'User updated successfully',
       user: {
         id: user._id,
@@ -57,21 +185,63 @@ router.put('/:id', auth, authorize('admin'), async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Update user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user'
+    });
   }
 });
 
-// Delete user (Admin only)
-router.delete('/:id', auth, authorize('admin'), async (req, res) => {
+/**
+ * DELETE /api/users/:id
+ * 
+ * Delete a user account.
+ * Only accessible by admin users.
+ * 
+ * @param {string} :id - User ID to delete
+ * @returns {Object} Success message
+ * @access Protected (admin only)
+ */
+router.delete('/:id', authorize('admin'), async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // Prevent admin from deleting themselves
+    if (req.user._id.toString() === req.params.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete your own account'
+      });
     }
-    res.json({ message: 'User deleted successfully' });
+    
+    const user = await User.findByIdAndDelete(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Delete user error:', error);
+    
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting user'
+    });
   }
 });
 
+// Export the router
 module.exports = router;

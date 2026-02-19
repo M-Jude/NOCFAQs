@@ -1,151 +1,176 @@
-# NOC FAQs - Network Operations Center Knowledge Base
+# NOC FAQs - Knowledge Base System
 
-A ReactJS and NodeJS application for NOC engineers to find common solutions to frequently encountered problems.
+A comprehensive Q&A platform for Network Operations Center (NOC) teams to document and share solutions for common technical issues.
 
 ## Features
 
-### Three User Roles:
-1. **HR Manager** - Track user session data (login times, duration, usage frequency)
-2. **NOC Engineer** - Query and find answers to problems
-3. **Admin** - Manage questions, solutions, and users
-
-### Features:
-- User authentication and role-based access control
-- Session tracking (login/logout times, duration)
-- FAQ search and filtering by category
-- Admin panel for managing questions and solutions
-- User management for admins
-- Dashboard with statistics
+- **User Authentication**: Secure JWT-based login with role-based access control
+- **FAQ Management**: Create, edit, and search through knowledge base articles
+- **Categories**: Organize questions by type (Network, Server, Security, Database, etc.)
+- **Session Tracking**: Monitor user login activity and system usage
+- **Role-Based Access**:
+  - **Admin**: Full system access, user management, question management
+  - **HR**: View session reports and user activity
+  - **NOC Engineer**: Browse and search FAQs
 
 ## Tech Stack
 
-- **Frontend**: ReactJS, Material-UI
-- **Backend**: NodeJS, Express
-- **Database**: MongoDB
+### Backend
+- Node.js + Express.js
+- MongoDB with Mongoose ODM
+- JWT Authentication
+- bcryptjs for password hashing
 
-## Prerequisites
+### Frontend
+- React 18
+- Material UI v5
+- React Router v6
+- Axios for API calls
 
-- Node.js (v14+)
-- MongoDB (local or cloud instance)
+## Quick Start
 
-## Installation
+### Prerequisites
+- Node.js (v14 or higher)
+- MongoDB (v4.4 or higher)
 
-### 1. Backend Setup
+### Installation
 
-```bash
-cd backend
-npm install
-```
+1. **Clone the repository**
+   ```bash
+   cd noc-faqs
+   ```
 
-### 2. Frontend Setup
+2. **Install dependencies**
+   ```bash
+   # Install all dependencies
+   npm run install:all
+   
+   # Or install individually
+   cd backend && npm install
+   cd ../frontend && npm install
+   ```
 
-```bash
-cd frontend
-npm install
-```
+3. **Configure environment**
+   ```bash
+   # Copy the example environment file
+   cp backend/.env.example backend/.env
+   
+   # Edit backend/.env with your settings
+   ```
 
-### 3. Database Setup
+4. **Seed the database (optional)**
+   ```bash
+   cd backend && npm run seed
+   ```
+   This creates test users and sample FAQ questions.
 
-Make sure MongoDB is running. Update the `MONGO_URI` in `backend/.env` if needed.
+5. **Start the application**
+   ```bash
+   # Start backend (terminal 1)
+   npm run start:backend
+   
+   # Start frontend (terminal 2)
+   npm run start:frontend
+   ```
 
-### 4. Seed Data
+6. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000/api
 
-Run the seed script to create default users and sample questions:
+### Default Login Credentials
 
-```bash
-cd backend
-node seed.js
-```
-
-This will create:
-- Admin user: admin@nocfaqs.com / admin123
-- HR user: hr@nocfaqs.com / hr123
-- NOC Engineer: noc1@nocfaqs.com / noc123
-
-## Running the Application
-
-### Start Backend
-
-```bash
-cd backend
-npm start
-```
-
-Server will run on http://localhost:5000
-
-### Start Frontend
-
-```bash
-cd frontend
-npm start
-```
-
-Application will open on http://localhost:3000
-
-## API Endpoints
-
-### Authentication
-- POST `/api/auth/login` - User login
-- POST `/api/auth/logout` - User logout
-- POST `/api/auth/register` - Register new user (admin only)
-- GET `/api/auth/me` - Get current user
-
-### Users
-- GET `/api/users` - Get all users (admin/HR only)
-- GET `/api/users/:id` - Get user by ID
-- PUT `/api/users/:id` - Update user (admin only)
-- DELETE `/api/users/:id` - Delete user (admin only)
-
-### Questions
-- GET `/api/questions` - Get all questions (with search/filter)
-- GET `/api/questions/:id` - Get question by ID
-- POST `/api/questions` - Create question (admin only)
-- PUT `/api/questions/:id` - Update question (admin only)
-- DELETE `/api/questions/:id` - Delete question (admin only)
-- GET `/api/questions/meta/categories` - Get all categories
-
-### Sessions
-- GET `/api/sessions` - Get all sessions (admin/HR only)
-- GET `/api/sessions/stats` - Get session statistics (admin/HR only)
-- GET `/api/sessions/active` - Get current active session
+After seeding the database:
+| Role    | Email              | Password  |
+|---------|-------------------|-----------|
+| Admin   | admin@nocfaqs.com | admin123  |
+| HR      | hr@nocfaqs.com    | hr123     |
+| NOC Eng | noc1@nocfaqs.com  | noc123    |
 
 ## Project Structure
 
 ```
-NOCFAQs/
+noc-faqs/
 ├── backend/
-│   ├── models/
+│   ├── models/          # Mongoose schemas
 │   │   ├── User.js
 │   │   ├── Question.js
 │   │   └── Session.js
-│   ├── routes/
+│   ├── routes/          # API routes
 │   │   ├── auth.js
 │   │   ├── users.js
 │   │   ├── questions.js
 │   │   └── sessions.js
-│   ├── middleware/
+│   ├── middleware/       # Express middleware
 │   │   └── auth.js
-│   ├── server.js
-│   ├── seed.js
-│   └── package.json
+│   ├── server.js        # Main server file
+│   ├── seed.js          # Database seeder
+│   └── .env.example     # Environment template
+│
 ├── frontend/
-│   ├── public/
 │   ├── src/
-│   │   ├── components/
-│   │   │   └── Layout.js
-│   │   ├── context/
-│   │   │   └── AuthContext.js
-│   │   ├── pages/
-│   │   │   ├── Login.js
-│   │   │   ├── Dashboard.js
-│   │   │   ├── Questions.js
-│   │   │   ├── QuestionDetail.js
-│   │   │   ├── HRDashboard.js
-│   │   │   ├── AdminDashboard.js
-│   │   │   ├── ManageQuestions.js
-│   │   │   └── ManageUsers.js
+│   │   ├── components/  # Reusable components
+│   │   ├── context/     # React context (Auth)
+│   │   ├── pages/       # Page components
 │   │   ├── App.js
 │   │   └── index.js
 │   └── package.json
+│
+├── package.json         # Root package.json
+├── .gitignore
 └── README.md
 ```
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/register` - Create user (admin only)
+- `GET /api/auth/me` - Get current user
+
+### Users
+- `GET /api/users` - List all users (admin/HR)
+- `GET /api/users/:id` - Get user by ID
+- `PUT /api/users/:id` - Update user (admin)
+- `DELETE /api/users/:id` - Delete user (admin)
+
+### Questions
+- `GET /api/questions` - List/search questions
+- `GET /api/questions/:id` - Get question details
+- `POST /api/questions` - Create question (admin)
+- `PUT /api/questions/:id` - Update question (admin)
+- `DELETE /api/questions/:id` - Delete question (admin)
+- `GET /api/questions/meta/categories` - List categories
+
+### Sessions
+- `GET /api/sessions` - List sessions (admin/HR)
+- `GET /api/sessions/stats` - Session statistics (admin/HR)
+- `GET /api/sessions/active` - Get active session
+
+## Deployment
+
+### Production Build
+
+1. **Build the frontend**
+   ```bash
+   npm run build:frontend
+   ```
+
+2. **Configure for production**
+   - Set `NODE_ENV=production` in backend/.env
+   - Update `MONGO_URI` to your production MongoDB
+   - Generate a secure `JWT_SECRET`
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| PORT | Server port | 5000 |
+| NODE_ENV | Environment | development |
+| MONGO_URI | MongoDB connection string | mongodb://localhost:27017/nocfaqs |
+| JWT_SECRET | JWT signing secret | (required for production) |
+| JWT_EXPIRES_IN | Token expiration | 24h |
+
+## License
+
+MIT License - See LICENSE file for details
