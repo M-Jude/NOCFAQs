@@ -89,14 +89,6 @@ sessionSchema.pre('save', function(next) {
 // ============================================================================
 
 /**
- * Check if this session is currently active
- * @returns {boolean}
- */
-sessionSchema.methods.isActive = function() {
-  return this.logoutTime === null;
-};
-
-/**
  * End the session (set logout time)
  * @returns {Promise<Session>}
  */

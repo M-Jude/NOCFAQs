@@ -56,7 +56,7 @@ const ManageUsers = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/users');
-      setUsers(response.data);
+      setUsers(response.data.users);
     } catch (error) {
       console.error('Error fetching users:', error);
     }

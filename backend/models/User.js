@@ -143,8 +143,6 @@ userSchema.statics.findByEmail = function(email) {
 // ============================================================================
 
 // Create indexes for frequently queried fields
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ createdAt: -1 });
 

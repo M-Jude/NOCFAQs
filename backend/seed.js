@@ -33,32 +33,32 @@ const Session = require('./models/Session');
 const defaultUsers = [
   {
     username: 'admin',
-    email: 'admin@nocfaqs.com',
+    email: 'admin@bcc.co.ug',
     password: 'admin123',
     role: 'admin',
     fullName: 'System Administrator',
     department: 'IT'
   },
   {
-    username: 'hr',
-    email: 'hr@nocfaqs.com',
-    password: 'hr123',
+    username: 'hr_user',
+    email: 'hr@bcc.co.ug',
+    password: 'hr1234',
     role: 'hr',
     fullName: 'HR Manager',
     department: 'Human Resources'
   },
   {
     username: 'noc_engineer1',
-    email: 'noc1@nocfaqs.com',
-    password: 'noc123',
+    email: 'noc1@bcc.co.ug',
+    password: 'noc1234',
     role: 'noc_engineer',
     fullName: 'John NOC',
     department: 'Network Operations'
   },
   {
     username: 'noc_engineer2',
-    email: 'noc2@nocfaqs.com',
-    password: 'noc123',
+    email: 'noc2@bcc.co.ug',
+    password: 'noc1234',
     role: 'noc_engineer',
     fullName: 'Jane NOC',
     department: 'Network Operations'
@@ -151,7 +151,12 @@ const seedDatabase = async () => {
 
     // Create users
     console.log('👤 Creating default users...');
-    const createdUsers = await User.insertMany(defaultUsers);
+    const createdUsers = [];
+    for (const userData of defaultUsers) {
+      const user = new User(userData);
+      await user.save();
+      createdUsers.push(user);
+    }
     console.log(`✓ Created ${createdUsers.length} users\n`);
 
     // Create questions with user references
@@ -214,10 +219,10 @@ const seedDatabase = async () => {
     console.log('=' .repeat(50));
     console.log('\n📋 LOGIN CREDENTIALS:');
     console.log('-'.repeat(30));
-    console.log('  Admin:    admin@nocfaqs.com  / admin123');
-    console.log('  HR:       hr@nocfaqs.com     / hr123');
-    console.log('  NOC Eng:  noc1@nocfaqs.com   / noc123');
-    console.log('  NOC Eng:  noc2@nocfaqs.com   / noc123');
+    console.log('  Admin:    admin@bcc.co.ug  / admin123');
+    console.log('  HR:       hr@bcc.co.ug     / hr1234');
+    console.log('  NOC Eng:  noc1@bcc.co.ug   / noc1234');
+    console.log('  NOC Eng:  noc2@bcc.co.ug   / noc1234');
     console.log('=' .repeat(50));
     console.log('');
 

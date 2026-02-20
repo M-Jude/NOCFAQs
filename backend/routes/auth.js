@@ -43,8 +43,8 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Find user by email (include password for comparison)
+    const user = await User.findOne({ email }).select('+password');
     
     if (!user) {
       return res.status(401).json({
@@ -54,6 +54,8 @@ router.post('/login', async (req, res) => {
     }
     
     // Verify password
+    console.log('Input password:', password);
+    console.log('User password (hashed):', user.password);
     const isMatch = await user.comparePassword(password);
     
     if (!isMatch) {
