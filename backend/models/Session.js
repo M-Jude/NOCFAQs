@@ -203,6 +203,31 @@ sessionSchema.virtual('isActive').get(function() {
   return this.logoutTime === null;
 });
 
+// Virtual for calculating current duration for active sessions (in minutes)
+sessionSchema.virtual('currentDuration').get(function() {
+  if (this.logoutTime === null) {
+    // For active sessions, calculate duration from loginTime to now
+    const now = new Date();
+    return Math.round((now - this.loginTime) / 60000);
+  }
+  // For completed sessions, return the stored duration
+  return this.duration;
+});
+
+// Virtual for calculating current duration in human-readable format
+sessionSchema.virtual('formattedCurrentDuration').get(function() {
+  const minutes = this.currentDuration;
+  if (minutes < 1) {
+    return '< 1m';
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0) {
+    return `${hours}h ${mins}m`;
+  }
+  return `${mins}m`;
+});
+
 // Ensure virtuals are included in JSON
 sessionSchema.set('toJSON', { virtuals: true });
 sessionSchema.set('toObject', { virtuals: true });

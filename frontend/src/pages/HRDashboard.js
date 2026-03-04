@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -33,11 +33,8 @@ const HRDashboard = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  // Fetch data function
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -46,23 +43,53 @@ const HRDashboard = () => {
 
       const [statsRes, sessionsRes] = await Promise.all([
         axios.get(`/api/sessions/stats?${params.toString()}`),
-        axios.get(`/api/sessions?${params.toString()}&limit=20`)
+        axios.get(`/api/sessions?${params.toString()}&limit=50`)
       ]);
 
-      setStats(statsRes.data);
+      setStats(statsRes.data.stats);
       setSessions(sessionsRes.data.sessions);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
     setLoading(false);
-  };
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchData();
+    // Refresh sessions every 30 seconds to update active session durations
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const handleFilter = () => {
     fetchData();
   };
 
-  const formatDuration = (minutes) => {
-    if (!minutes || minutes === 0) return 'Active';
+  // Format duration - handles both session objects and plain numbers
+  const formatDuration = (sessionOrNumber) => {
+    // Check if it's a session object (has logoutTime property) or a number
+    if (sessionOrNumber && typeof sessionOrNumber === 'object' && sessionOrNumber.hasOwnProperty('logoutTime')) {
+      const session = sessionOrNumber;
+      if (!session.logoutTime) {
+        // Active session - show current running duration
+        const currentDuration = session.currentDuration || Math.round((new Date() - new Date(session.loginTime)) / 60000);
+        if (currentDuration < 1) return '< 1m';
+        const hours = Math.floor(currentDuration / 60);
+        const mins = currentDuration % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      }
+      // Completed session - show actual duration
+      const minutes = session.duration || 0;
+      if (minutes === 0) return '0m';
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    }
+    // It's a number (plain duration value)
+    const minutes = sessionOrNumber || 0;
+    if (minutes === 0) return '0m';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
@@ -198,7 +225,7 @@ const HRDashboard = () => {
       )}
 
       <Typography variant="h5" gutterBottom>
-        Recent Sessions
+        Session History
       </Typography>
       <TableContainer component={Paper}>
         <Table>
@@ -210,13 +237,27 @@ const HRDashboard = () => {
               <TableCell>Login Time</TableCell>
               <TableCell>Logout Time</TableCell>
               <TableCell>Duration</TableCell>
+              <TableCell>Status</TableCell>
               <TableCell>IP Address</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {sessions.map((session) => (
-              <TableRow key={session._id}>
-                <TableCell>{session.user?.fullName}</TableCell>
+              <TableRow 
+                key={session._id}
+                sx={{ 
+                  backgroundColor: !session.logoutTime ? 'rgba(76, 175, 80, 0.08)' : 'inherit',
+                  '&:hover': { backgroundColor: !session.logoutTime ? 'rgba(76, 175, 80, 0.12)' : 'rgba(0, 0, 0, 0.04)' }
+                }}
+              >
+                <TableCell>
+                  <Typography variant="body2" fontWeight={!session.logoutTime ? 600 : 400}>
+                    {session.user?.fullName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {session.user?.username}
+                  </Typography>
+                </TableCell>
                 <TableCell>
                   <Chip 
                     label={session.user?.role} 
@@ -231,17 +272,44 @@ const HRDashboard = () => {
                 <TableCell>{session.user?.department || '-'}</TableCell>
                 <TableCell>{formatDateTime(session.loginTime)}</TableCell>
                 <TableCell>
-                  {session.logoutTime ? formatDateTime(session.logoutTime) : (
-                    <Chip label="Active" size="small" color="success" />
+                  {session.logoutTime ? (
+                    formatDateTime(session.logoutTime)
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">-</Typography>
                   )}
                 </TableCell>
-                <TableCell>{formatDuration(session.duration)}</TableCell>
+                <TableCell>
+                  <Typography 
+                    variant="body2" 
+                    fontWeight={!session.logoutTime ? 600 : 400}
+                    color={!session.logoutTime ? 'success.main' : 'text.primary'}
+                  >
+                    {formatDuration(session)}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  {!session.logoutTime ? (
+                    <Chip 
+                      label="Active" 
+                      size="small" 
+                      color="success" 
+                      icon={<TimerIcon />}
+                    />
+                  ) : (
+                    <Chip 
+                      label="Completed" 
+                      size="small" 
+                      color="default" 
+                      variant="outlined"
+                    />
+                  )}
+                </TableCell>
                 <TableCell>{session.ipAddress || '-'}</TableCell>
               </TableRow>
             ))}
             {sessions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   No sessions found
                 </TableCell>
               </TableRow>
